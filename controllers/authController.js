@@ -23,7 +23,7 @@ exports.register = async (req, res) => {
       verificationCode: code,
     });
 
-    await sendEmail(email, 'Verify your email', `Your code is ${code}`);
+    await sendEmail(email, 'Verify your email', code, username);
     res.status(201).json({ msg: 'Verification code sent to email' });
   } catch (err) {
     res.status(500).json({ msg: err.message });
