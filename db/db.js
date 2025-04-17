@@ -2,9 +2,8 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const safeURI = process.env.MONGO_URI.replace(/\/\/.*?:.*?@/, '//<user>:<pass>@');
     await mongoose.connect(process.env.MONGO_URI);
-    console.log(`${safeURI}`);
+    console.log('DB Connected');
   } catch (error) {
     console.error('MongoDB connection failed:', error.message);
     process.exit(1);
