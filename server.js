@@ -2,7 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./db/db');
-const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 dotenv.config();
 const app = express();
@@ -14,7 +14,7 @@ app.use(express.json());
 connectDB();
 
 // Routes
-app.use('/',userRoutes);
+app.use('/truckbazaar', authRoutes);
 
 app.listen(port, () => {
   console.log(`http://localhost:${port}`);
