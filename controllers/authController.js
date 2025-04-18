@@ -13,7 +13,9 @@ exports.register = async (req, res) => {
     if (existing) return res.status(400).json({ msg: 'Email already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const code = generateCode();
+    const expires = new Date(Date.now() + 60 * 1000);
 
     const newUser = await User.create({
       username,
@@ -21,6 +23,7 @@ exports.register = async (req, res) => {
       phone,
       password: hashedPassword,
       verificationCode: code,
+      codeExpiresAt: expires,
     });
 
     await sendEmail(email, 'Verify your email', code, username);
@@ -35,12 +38,38 @@ exports.verifyEmail = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user || user.verificationCode !== code) {
-      return res.status(400).json({ msg: 'Invalid code' });
+      return res.status(400).json({ msg: 'Invalid or expired code' });
     }
     user.isVerified = true;
     user.verificationCode = null;
     await user.save();
     res.json({ msg: 'Email verified successfully' });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+};
+
+exports.resendCode = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ msg: 'User already verified' });
+
+    if (user.codeExpiresAt && user.codeExpiresAt > new Date()) {
+      const remaining = Math.ceil((user.codeExpiresAt - Date.now()) / 1000);
+      return res.status(400).json({ msg: `Please wait ${remaining}s before requesting a new code` });
+    }
+
+    const newCode = generateCode();
+    user.verificationCode = newCode;
+    user.codeExpiresAt = new Date(Date.now() + 60 * 1000);
+    await user.save();
+
+    await sendEmail(email, 'Verify your email', newCode, user.username);
+    res.json({ msg: 'A new verification code has been sent' });
+
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
